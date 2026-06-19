@@ -94,6 +94,16 @@ export type RuntimeAgentDef = {
   id: string;
   name: string;
   bin: string;
+  // Execution transport for this runtime. The default `'subprocess'` is the
+  // historical path: detection PATH-scans `bin` and the chat run spawns it as
+  // a child process whose stdout is parsed per `streamFormat`. `'http'` marks
+  // a runtime that is NOT a local CLI but a remote HTTP/SSE engine (today only
+  // `dukk` → dukk-server / api.dukk.com.br): detection probes a health
+  // endpoint instead of PATH, and the chat run talks to it over HTTP in
+  // `startChatRun` before reaching the spawn machinery. `bin`/`versionArgs`/
+  // `buildArgs` stay declared to satisfy the shared type but are inert for
+  // http transports — they are never PATH-resolved or spawned.
+  transport?: 'subprocess' | 'http';
   versionArgs: string[];
   fallbackModels: RuntimeModelOption[];
   buildArgs: (

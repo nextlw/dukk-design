@@ -214,6 +214,8 @@ import { attachPiRpcSession } from './pi-rpc.js';
 import { stageAmrImagePaths } from './amr-image-staging.js';
 import { ingestRoutineConnectorEvolution } from './automation-routine-evolution.js';
 import { createClaudeStreamHandler } from './claude-stream.js';
+import { resolveDukkConfig } from './dukk-config.js';
+import { runDukkHttpChat } from './dukk-http.js';
 import { createAgentTitleMarkerStripper } from './title-marker.js';
 import { createRoleMarkerGuard } from './role-marker-guard.js';
 import { diagnoseClaudeCliFailure } from './claude-diagnostics.js';
@@ -7385,7 +7387,14 @@ export async function startServer({
       toolTokenRevoked = true;
       toolTokenRegistry.revokeToken(toolTokenGrant.token, reason);
     };
-    const runtimeToolPrompt = createAgentRuntimeToolPrompt(daemonUrl, toolTokenGrant);
+    // HTTP-transport engines (dukk) run their own agent loop with their own
+    // tools — they never call the daemon's `/api/projects/*` file endpoints,
+    // so the runtime-tool contract (and its token) is irrelevant. Omitting it
+    // keeps the composed prompt to pure design context for the dukk path.
+    const runtimeToolPrompt =
+      def.transport === 'http'
+        ? ''
+        : createAgentRuntimeToolPrompt(daemonUrl, toolTokenGrant);
     const commentHint = renderCommentAttachmentHint(safeCommentAttachments);
 
     // Resolve external MCP config + stored OAuth tokens up-front so the
@@ -7798,6 +7807,78 @@ export async function startServer({
       persistRunEventToAssistantMessage(db, run, event, data);
       design.runs.emit(run, event, data);
     };
+    // HTTP-transport engines (dukk) are not spawned as a child process: we
+    // talk to their session HTTP/SSE API directly and translate the streamed
+    // turn events into the same `send('agent', …)` payloads the spawn path
+    // emits. We branch here — after the design prompt is composed and `send`
+    // is wired, but before any spawn-specific machinery — and return so none
+    // of the child-process lifecycle below runs. Artifacts/tools-in-project
+    // are out of scope for this MVP (chat + streaming only).
+    if (def.transport === 'http') {
+      if (run.cancelRequested || design.runs.isTerminal(run.status)) return;
+      const dukkConfig = resolveDukkConfig(process.env);
+      run.status = 'running';
+      run.updatedAt = Date.now();
+      send('start', {
+        runId,
+        agentId,
+        bin: def.name,
+        streamFormat: def.streamFormat ?? 'dukk-sse',
+        projectId: typeof projectId === 'string' ? projectId : null,
+        cwd,
+        model: safeModel,
+        reasoning: safeReasoning,
+        toolTokenExpiresAt: null,
+      });
+      const controller = new AbortController();
+      // The runs service has no child to signal for http runs; it invokes
+      // `run.httpAbort` (see runs.ts cancel) to abort our fetch/SSE loop.
+      run.httpAbort = () => {
+        try {
+          controller.abort();
+        } catch {
+          /* best-effort */
+        }
+      };
+      try {
+        const result = await runDukkHttpChat({
+          config: dukkConfig,
+          prompt: composed,
+          model: safeModel && safeModel !== 'default' ? safeModel : null,
+          cwd,
+          conversationId: typeof conversationId === 'string' ? conversationId : null,
+          signal: controller.signal,
+          emit: (payload) => send('agent', payload),
+          onSession: (sessionId, turnId) => {
+            run.dukkSessionId = sessionId;
+            run.dukkTurnId = turnId;
+          },
+        });
+        // The cancel path already drove the run to a terminal `canceled`
+        // state; don't double-finish.
+        if (run.cancelRequested || design.runs.isTerminal(run.status)) {
+          revokeToolToken('cancel');
+          return;
+        }
+        if (result.ok) {
+          revokeToolToken('completed');
+          return design.runs.finish(run, 'succeeded', 0, null);
+        }
+        revokeToolToken('error');
+        return design.runs.fail(run, 'AGENT_EXECUTION_FAILED', result.error);
+      } catch (err) {
+        if (run.cancelRequested || design.runs.isTerminal(run.status)) {
+          revokeToolToken('cancel');
+          return;
+        }
+        revokeToolToken('error');
+        return design.runs.fail(
+          run,
+          'AGENT_EXECUTION_FAILED',
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
     const retryAnalyticsBase = (decision, failure, errorCode) => {
       const runProjectKind = resolveRunProjectKindForAnalytics({
         hintProjectKind: null,

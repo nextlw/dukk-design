@@ -319,6 +319,16 @@ export function createChatRunService({
     if (TERMINAL_RUN_STATUSES.has(run.status)) return statusBody(run);
     run.cancelRequested = true;
     run.updatedAt = Date.now();
+    // HTTP-transport runs (dukk) have no child process to signal. They expose
+    // an `httpAbort` hook that aborts the in-flight fetch/SSE loop; the loop's
+    // abort path also best-effort cancels the engine-side turn.
+    if (typeof run.httpAbort === 'function') {
+      try {
+        run.httpAbort();
+      } catch {
+        // The finish below still marks the run canceled regardless.
+      }
+    }
     if (!run.child) {
       finish(run, 'canceled', null, 'SIGTERM');
       return statusBody(run);
