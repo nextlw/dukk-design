@@ -11,6 +11,8 @@ import { probeAgentAuthStatus } from './auth.js';
 import { agentCapabilities } from './capabilities.js';
 import { installMetaForAgent } from './metadata.js';
 import { resolveAmrProfile } from '../integrations/vela.js';
+import { resolveDukkConfig } from '../dukk-config.js';
+import { dukkHealthOk } from '../dukk-http.js';
 import {
   buildAuthDiagnostic,
   buildExecutableDiagnostic,
@@ -188,10 +190,51 @@ async function probeCapabilities(
   }
 }
 
+// HTTP-transport runtimes (dukk) are not on PATH — availability is a health
+// probe against the configured engine plus a resolvable bearer, not a version
+// spawn. Models come from the engine catalog via `fetchModels` (same fallback
+// rules as the spawn path) so the picker still populates when the engine is
+// reachable but the catalog read fails.
+async function probeHttpAgent(
+  def: RuntimeAgentDef,
+  configuredEnv: Record<string, string> = {},
+): Promise<DetectedAgent> {
+  const env = { ...process.env, ...(def.env || {}), ...configuredEnv };
+  let healthy = false;
+  let authStatus: 'ok' | 'missing' = 'missing';
+  try {
+    const config = resolveDukkConfig(env);
+    if (config.token) {
+      authStatus = 'ok';
+      healthy = await dukkHealthOk(config);
+    }
+  } catch {
+    healthy = false;
+  }
+  if (!healthy) {
+    return {
+      ...unavailableAgent(def),
+      authStatus,
+    };
+  }
+  const modelResult = await fetchModels(def, '', env);
+  return {
+    ...stripFns(def),
+    models: modelResult.models,
+    modelsSource: modelResult.source,
+    available: true,
+    authStatus: 'ok',
+    ...installMetaForAgent(def.id),
+  };
+}
+
 async function probe(
   def: RuntimeAgentDef,
   configuredEnv: Record<string, string> = {},
 ): Promise<DetectedAgent> {
+  if (def.transport === 'http') {
+    return probeHttpAgent(def, configuredEnv);
+  }
   // Detection must probe the exact path the runtime will spawn, not just the
   // PATH-visible shim. This is load-bearing for Codex under nvm/fnm/mise:
   // the discovered `codex` entry is often a `#!/usr/bin/env node` wrapper
