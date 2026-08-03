@@ -3,7 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DesignFilesPanel } from '../../src/components/DesignFilesPanel';
+import { DesignToolsPanel } from '../../src/components/DesignToolsPanel';
 import type { ProjectFile } from '../../src/types';
 
 // Regression coverage for #3260. In the no-preview state of the file
@@ -44,7 +44,7 @@ function file(overrides: Partial<ProjectFile> & Pick<ProjectFile, 'name'>): Proj
 
 function renderPanel(files: ProjectFile[]) {
   return render(
-    <DesignFilesPanel
+    <DesignToolsPanel
       projectId="test-project"
       files={files}
       liveArtifacts={[]}
@@ -73,7 +73,7 @@ afterEach(() => {
 const LONG_NAME =
   'mpqdcf5m-A-1-year-old-boy-_standing_-with-short-black-hair_-big-eyes-with-black-pupils_-wearing-a-watermelon-shaped-helmet.jpeg';
 
-describe('DesignFilesPanel long filename truncation (#3260)', () => {
+describe('DesignToolsPanel long filename truncation (#3260)', () => {
   it('renders the file row for a long filename without crashing', () => {
     const { container } = renderPanel([file({ name: LONG_NAME })]);
     const row = container.querySelector(`[data-testid="design-file-row-${LONG_NAME}"]`);

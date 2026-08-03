@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ComponentProps } from 'react';
 
-import { DesignFilesPanel, type DesignFilesNavState } from '../../src/components/DesignFilesPanel';
+import { DesignToolsPanel, type DesignFilesNavState } from '../../src/components/DesignToolsPanel';
 import type { ProjectFile, ProjectFileKind, ProjectFolder } from '../../src/types';
 
 function folder(path: string): ProjectFolder {
@@ -59,13 +59,13 @@ function generateFiles(count: number): ProjectFile[] {
 
 function renderPanel(
   files: ProjectFile[],
-  overrides: Partial<ComponentProps<typeof DesignFilesPanel>> = {},
+  overrides: Partial<ComponentProps<typeof DesignToolsPanel>> = {},
 ) {
   const onOpenFile = vi.fn();
   const onDeleteFiles = vi.fn();
   const onClearUploadError = vi.fn();
   const result = render(
-    <DesignFilesPanel
+    <DesignToolsPanel
       projectId="test-project"
       files={files}
       liveArtifacts={[]}
@@ -92,7 +92,7 @@ function sectionLabels(): string[] {
   );
 }
 
-describe('DesignFilesPanel sections', () => {
+describe('DesignToolsPanel sections', () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
@@ -176,7 +176,7 @@ describe('DesignFilesPanel sections', () => {
   });
 });
 
-describe('DesignFilesPanel large list', () => {
+describe('DesignToolsPanel large list', () => {
   afterEach(() => cleanup());
 
   it('renders all rows at once (no pagination)', () => {
@@ -193,7 +193,7 @@ describe('DesignFilesPanel large list', () => {
   });
 });
 
-describe('DesignFilesPanel selection', () => {
+describe('DesignToolsPanel selection', () => {
   afterEach(() => cleanup());
 
   it('shows the batch bar and passes every selected file to batch delete', () => {
@@ -246,7 +246,7 @@ describe('DesignFilesPanel selection', () => {
   });
 });
 
-describe('DesignFilesPanel preview', () => {
+describe('DesignToolsPanel preview', () => {
   afterEach(() => cleanup());
 
   it('shows the file extension in the preview stats', () => {
@@ -295,7 +295,7 @@ describe('DesignFilesPanel preview', () => {
   });
 });
 
-describe('DesignFilesPanel directory navigation', () => {
+describe('DesignToolsPanel directory navigation', () => {
   afterEach(() => {
     cleanup();
   });
@@ -393,7 +393,7 @@ describe('DesignFilesPanel directory navigation', () => {
 
     function makePanel(nav?: DesignFilesNavState) {
       return (
-        <DesignFilesPanel
+        <DesignToolsPanel
           projectId="test-project"
           files={[
             file({ name: 'assets/logo.png', kind: 'image' }),
@@ -460,7 +460,7 @@ describe('DesignFilesPanel directory navigation', () => {
   it('resets currentDir automatically when all files in the current subdirectory are removed', () => {
     function makePanel(files: ProjectFile[]) {
       return (
-        <DesignFilesPanel
+        <DesignToolsPanel
           projectId="test-project"
           files={files}
           liveArtifacts={[]}
@@ -495,7 +495,7 @@ describe('DesignFilesPanel directory navigation', () => {
   });
 });
 
-describe('DesignFilesPanel current-directory sync', () => {
+describe('DesignToolsPanel current-directory sync', () => {
   afterEach(() => cleanup());
 
   it('reports the active folder so new files are created under it, not the root', () => {
@@ -516,7 +516,7 @@ describe('DesignFilesPanel current-directory sync', () => {
   });
 });
 
-describe('DesignFilesPanel persisted (empty) folders', () => {
+describe('DesignToolsPanel persisted (empty) folders', () => {
   afterEach(() => cleanup());
 
   it('shows an empty persisted folder that has no files under it', () => {

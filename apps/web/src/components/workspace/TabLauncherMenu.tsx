@@ -361,7 +361,7 @@ export function TabLauncherMenu({
 }
 
 // --- local helpers ---------------------------------------------------------
-// DesignFilesPanel keeps equivalent `humanBytes` / `relativeTime` /
+// DesignToolsPanel keeps equivalent `humanBytes` / `relativeTime` /
 // `kindLabel` helpers but does not export them, so we keep tiny copies here
 // (same formatting contract) rather than widening that component's surface.
 

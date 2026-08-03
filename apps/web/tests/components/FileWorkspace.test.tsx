@@ -11,7 +11,7 @@ import {
   FileWorkspace,
   scrollWorkspaceTabsWithWheel,
 } from '../../src/components/FileWorkspace';
-import { DesignFilesPanel } from '../../src/components/DesignFilesPanel';
+import { DesignToolsPanel } from '../../src/components/DesignToolsPanel';
 import { projectSplitClassName, projectSplitStyle } from '../../src/components/ProjectView';
 import {
   fetchProjectFileText,
@@ -59,22 +59,22 @@ vi.mock('../../src/components/workspace/TerminalViewer', () => ({
   ),
 }));
 
-// Records the `folders` prop DesignFilesPanel receives on EVERY render (still
+// Records the `folders` prop DesignToolsPanel receives on EVERY render (still
 // renders the real component). Lets a test observe the first render after a
 // project switch — the pre-paint frame RTL's post-rerender DOM assertion can't
 // see — to prove no stale folders ever reach the new panel.
-const { designFilesPanelRenders } = vi.hoisted(() => ({
-  designFilesPanelRenders: [] as { projectId: string; folderCount: number }[],
+const { designToolsPanelRenders } = vi.hoisted(() => ({
+  designToolsPanelRenders: [] as { projectId: string; folderCount: number }[],
 }));
-vi.mock('../../src/components/DesignFilesPanel', async () => {
-  const actual = await vi.importActual<typeof import('../../src/components/DesignFilesPanel')>(
-    '../../src/components/DesignFilesPanel',
+vi.mock('../../src/components/DesignToolsPanel', async () => {
+  const actual = await vi.importActual<typeof import('../../src/components/DesignToolsPanel')>(
+    '../../src/components/DesignToolsPanel',
   );
-  const Real = actual.DesignFilesPanel;
+  const Real = actual.DesignToolsPanel;
   return {
     ...actual,
-    DesignFilesPanel: (props: Parameters<typeof Real>[0]) => {
-      designFilesPanelRenders.push({
+    DesignToolsPanel: (props: Parameters<typeof Real>[0]) => {
+      designToolsPanelRenders.push({
         projectId: props.projectId,
         folderCount: props.folders?.length ?? 0,
       });
@@ -214,8 +214,8 @@ function changeInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-function renderDesignFilesPanel(overrides: Partial<React.ComponentProps<typeof DesignFilesPanel>> = {}) {
-  const props: React.ComponentProps<typeof DesignFilesPanel> = {
+function renderDesignToolsPanel(overrides: Partial<React.ComponentProps<typeof DesignToolsPanel>> = {}) {
+  const props: React.ComponentProps<typeof DesignToolsPanel> = {
     projectId: 'project-1',
     files: [],
     liveArtifacts: [],
@@ -231,7 +231,7 @@ function renderDesignFilesPanel(overrides: Partial<React.ComponentProps<typeof D
     onNewSketch: vi.fn(),
     ...overrides,
   };
-  return render(<DesignFilesPanel {...props} />);
+  return render(<DesignToolsPanel {...props} />);
 }
 
 function unreadableDropDataTransfer(fallbackFiles: File[] = []) {
@@ -602,7 +602,7 @@ describe('FileWorkspace upload input', () => {
     // Switch to project-b; its folder fetch is still pending. The previous
     // project's 'assets' folder must be gone immediately (reset synchronously),
     // not linger and suppress the new project's empty state.
-    designFilesPanelRenders.length = 0;
+    designToolsPanelRenders.length = 0;
     rerender(<FileWorkspace {...baseProps} projectId="project-b" files={[]} />);
     expect(
       [...container.querySelectorAll('.df-dir-row .df-row-name')].some(
@@ -615,7 +615,7 @@ describe('FileWorkspace upload input', () => {
     // An effect-based reset would let project-b's first render observe the
     // stale 'assets' folder before the effect cleared it; RTL's post-rerender
     // DOM check above can't catch that frame, this can.
-    const projectBRenders = designFilesPanelRenders.filter((r) => r.projectId === 'project-b');
+    const projectBRenders = designToolsPanelRenders.filter((r) => r.projectId === 'project-b');
     expect(projectBRenders.length).toBeGreaterThan(0);
     expect(projectBRenders.every((r) => r.folderCount === 0)).toBe(true);
   });
@@ -669,7 +669,7 @@ describe('FileWorkspace upload input', () => {
   it('falls back to the browser file list when a dragged entry cannot be read', async () => {
     const fallbackFile = new File(['mock'], 'fallback.png', { type: 'image/png' });
     const onUploadFiles = vi.fn();
-    const { container } = renderDesignFilesPanel({ onUploadFiles });
+    const { container } = renderDesignToolsPanel({ onUploadFiles });
 
     fireEvent.drop(container.querySelector('.df-body')!, {
       dataTransfer: unreadableDropDataTransfer([fallbackFile]),
@@ -681,7 +681,7 @@ describe('FileWorkspace upload input', () => {
 
   it('shows a recoverable read error when a dragged entry disappears before import', async () => {
     const onUploadFiles = vi.fn();
-    const { container } = renderDesignFilesPanel({ onUploadFiles });
+    const { container } = renderDesignToolsPanel({ onUploadFiles });
 
     fireEvent.drop(container.querySelector('.df-body')!, {
       dataTransfer: unreadableDropDataTransfer(),
@@ -1245,11 +1245,11 @@ describe('FileWorkspace launcher tab creation', () => {
   });
 });
 
-describe('DesignFilesPanel plugin folders', () => {
+describe('DesignToolsPanel plugin folders', () => {
   it('surfaces generated plugin folders with agent-routed CLI actions', async () => {
     const onPluginFolderAgentAction = vi.fn();
     const container = renderWorkspace(
-      <DesignFilesPanel
+      <DesignToolsPanel
         projectId="project-1"
         files={[
           workspaceFile('generated-plugin/open-design.json'),

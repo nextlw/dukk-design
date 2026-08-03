@@ -138,7 +138,7 @@ sequenceDiagram
   **Goal:** Let users inspect and select a generated plugin folder from the project workspace.
 
   **Files:**
-  - Modify: `apps/web/src/components/DesignFilesPanel.tsx`
+  - Modify: `apps/web/src/components/DesignToolsPanel.tsx`
   - Modify: `apps/web/src/components/FileWorkspace.tsx`
   - Modify: `apps/web/src/components/FileOpsSummary.tsx` if folder outputs are surfaced from tool/file ops
   - Modify: daemon project file listing endpoints in `apps/daemon/src/server.ts` if they currently flatten directories too aggressively
@@ -147,7 +147,7 @@ sequenceDiagram
 
   **Approach:**
   - Preserve relative paths so `generated-plugin/open-design.json` and `generated-plugin/SKILL.md` remain visibly grouped.
-  - A minimal v1 can show a folder row in `DesignFilesPanel` and expand to its files; it does not need a full IDE tree.
+  - A minimal v1 can show a folder row in `DesignToolsPanel` and expand to its files; it does not need a full IDE tree.
   - The folder row should expose the install action only when it contains a plugin marker file.
 
   **Test scenarios:**
@@ -161,7 +161,7 @@ sequenceDiagram
 
   **Files:**
   - Modify: `apps/web/src/state/projects.ts`
-  - Modify: `apps/web/src/components/DesignFilesPanel.tsx` or the GenUI surface that owns the final action
+  - Modify: `apps/web/src/components/DesignToolsPanel.tsx` or the GenUI surface that owns the final action
   - Modify: `apps/daemon/src/server.ts`
   - Reuse: `apps/daemon/src/plugins/installer.ts`
   - Reuse: `apps/daemon/src/plugins/validate.ts`
@@ -234,5 +234,5 @@ Implementation can enrich this with the current locale and UI-provided goal, but
 ## Open questions
 
 - Should the generated plugin folder default to `generated-plugin/` or `<plugin-id>/`? The plan assumes `generated-plugin/` for predictable UI detection, with final install using the manifest id.
-- Should "Add to My plugins" live in `DesignFilesPanel`, a GenUI final surface, or both? The plan allows both, but v1 should pick one primary owner.
+- Should "Add to My plugins" live in `DesignToolsPanel`, a GenUI final surface, or both? The plan allows both, but v1 should pick one primary owner.
 - Should the daemon expose a scaffold API now, or should the authoring scenario ask the agent to create files directly? Direct file creation is simpler for v1; scaffold API becomes useful for template-first creation.

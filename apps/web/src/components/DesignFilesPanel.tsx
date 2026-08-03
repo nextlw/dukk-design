@@ -265,7 +265,7 @@ function RotatingTip() {
  * preview pane, and a static "useful info" footer. Triggered as a sticky
  * first tab in FileWorkspace.
  */
-export function DesignFilesPanel({
+export function DesignToolsPanel({
   projectId,
   rootDirName,
   reloading,

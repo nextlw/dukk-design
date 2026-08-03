@@ -64,7 +64,7 @@ import {
 import type { ChatSessionMode, WorkspaceContextItem } from '@open-design/contracts';
 import { createTerminal, killTerminal } from '../state/projects';
 import type { QuestionForm } from '../artifacts/question-form';
-import { DesignFilesPanel, type DesignFilesNavState } from './DesignFilesPanel';
+import { DesignToolsPanel, type DesignFilesNavState } from './DesignToolsPanel';
 import { DesignBrowserPanel, labelFromUrl, type BrowserPageInfo } from './DesignBrowserPanel';
 import type { PluginFolderAgentAction } from './design-files/pluginFolderActions';
 import { designSystemGithubEvidenceState, repoConnectCopy } from './design-system-github-evidence';
@@ -95,7 +95,7 @@ interface Props {
   projectId: string;
   projectKind: TrackingProjectKind;
   // Basename of the project's chosen working directory (e.g. "openclaw").
-  // Threaded to DesignFilesPanel as the breadcrumb root label. Undefined for
+  // Threaded to DesignToolsPanel as the breadcrumb root label. Undefined for
   // default-storage projects.
   rootDirName?: string;
   // True while a working-dir replace is reindexing; shows a loading state.
@@ -480,7 +480,7 @@ export function FileWorkspace({
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [projectFolders, setProjectFolders] = useState<ProjectFolder[]>(EMPTY_PROJECT_FOLDERS);
   // Reset the folder list during render — NOT in an effect — when the project
-  // changes. DesignFilesPanel is keyed by `projectId`, so an effect-based reset
+  // changes. DesignToolsPanel is keyed by `projectId`, so an effect-based reset
   // would let the new panel mount once with the previous project's folders and
   // briefly suppress the new project's empty state (the exact regression this
   // fix removes). Adjusting state during render discards this render before the
@@ -570,7 +570,7 @@ export function FileWorkspace({
   }, [projectId]);
 
   // True when the Design Files tab has nothing to attach: no files, no live
-  // artifacts, no folders. Mirrors DesignFilesPanel's own empty-state gate so
+  // artifacts, no folders. Mirrors DesignToolsPanel's own empty-state gate so
   // the "Design files" composer context and the empty placeholder agree on
   // when the tab is actually empty. Reused below to suppress the auto-attached
   // workspace context for a brand-new/empty project.
@@ -2043,7 +2043,7 @@ export function FileWorkspace({
         />
       ) : null}
       <div className="ws-body">
-        {/* Banner moved into DesignFilesPanel for the Design Files tab so
+        {/* Banner moved into DesignToolsPanel for the Design Files tab so
             single-click preview (which keeps activeTab on DESIGN_FILES_TAB)
             no longer leaves a stale banner mounted above the preview.
             Keep a fallback here that fires only when activeTab is not the
@@ -2118,7 +2118,7 @@ export function FileWorkspace({
             githubConnected={githubConnected}
           />
         ) : activeTab === DESIGN_FILES_TAB ? (
-          <DesignFilesPanel
+          <DesignToolsPanel
             key={projectId}
             projectId={projectId}
             rootDirName={rootDirName}

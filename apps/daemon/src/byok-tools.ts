@@ -407,7 +407,7 @@ export interface BYOKToolContext {
   /** Daemon's PROJECTS_DIR (the `<projectRoot>/.od/projects/` folder
    *  that holds per-project file trees). Generated images land in
    *  `<projectsRoot>/<projectId>/byok-<id>.png` so the project's
-   *  FileViewer / DesignFilesPanel discover them automatically and
+   *  FileViewer / DesignToolsPanel discover them automatically and
    *  the file travels with the project on export, archive, rename. */
   projectsRoot: string;
   /** Active project id from the chat surface. Required — the BYOK
